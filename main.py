@@ -22,16 +22,6 @@ class Home(tornado.web.RequestHandler):
         self.db = self.conn['users']
         self.coords = self.db['coords']
 
-        ## Blog's Welcome entry
-        '''timestamp = datetime.now()
-        user = {
-                "_id": 1,
-                "x": 1,
-                "y": 1,
-                "timestamp": timestamp,
-        }
-        self.db.users.insert(user)'''
-
 
 class User(Home):
 
