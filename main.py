@@ -29,6 +29,7 @@ class Point(Home):
         except TypeError:
             self.write('788778')
 
+
     def post(self):
         _id = self.db.points.count() + 1
         timestamp = datetime.now()
@@ -38,8 +39,10 @@ class Point(Home):
 
         point = {
                 "_id": _id,
-                "x": self.get_query_argument('x'),
-                "y": self.get_query_argument('y'),
+                "point": [self.get_query_argument('x'),
+                          self.get_query_argument('y')],
+                '''"x": self.get_query_argument('x'),
+                "y": self.get_query_argument('y'),'''
                 "timestamp": timestamp
         }
         self.db.points.insert(point)
@@ -53,8 +56,8 @@ class Point(Home):
         _id = int(pid)
         timestamp = datetime.now()
         point = {
-                "x": self.get_query_argument('x'),
-                "y": self.get_query_argument('y'),
+                "point": [self.get_query_argument('x'),
+                          self.get_query_argument('y')],
                 "timestamp": timestamp
         }
         self.db.points.update({"_id": _id}, {"$set": point})
@@ -65,8 +68,8 @@ class Point(Home):
         _id = int(pid)
         point = {
                 "_id": None,
-                "x": None,
-                "y": None,
+                "point": [None,
+                          None],
                 "timestamp": None,
         }
         self.db.points.update({"_id": _id}, {"$set": point})
@@ -86,6 +89,20 @@ class Points(Home):
         self.set_header('Content-Type', 'application/json')
         self.db.points.drop()
         self.write(dumps(points))
+      
+        
+class FindKnn(Home):
+    
+    def get(self):
+        x = self.get_query_argument('x')
+        y = self.get_query_argument('y')
+        r = self.get_query_argument('r')
+        points = str(list(self.db.points.find({"point": {"$near": [x, y],
+                                                         "$maxDistance": r}})))
+        self.write(dumps(points))
+
+        
+    
 
 
 class Distance(Home):
@@ -96,10 +113,10 @@ class Distance(Home):
         point2_id = self.get_query_argument('point2')
         point1 = self.db.points.find_one({"_id": int(point1_id)})
         point2 = self.db.points.find_one({"_id": int(point2_id)})
-        x1 = int(point1['x'])
-        y1 = int(point1['y'])
-        x2 = int(point2['x'])
-        y2 = int(point2['y'])
+        x1 = int(point1['point'][0])
+        y1 = int(point1['point'][1])
+        x2 = int(point2['point'][0])
+        y2 = int(point2['point'][1])
         dist = sqrt((x2 - x1)**2 + (y2-y1)**2)
         print(x1, y1, x2, y2)
         print(dist)
@@ -112,7 +129,8 @@ application = tornado.web.Application([
     (r"/point/([0-9]+)", Point),
     (r"/point/", Point),
     (r"/points/", Points),
-    (r"/dist/", Distance)
+    (r"/dist/", Distance),
+    (r"/find/", FindKnn)
     ], debug=True)
 
 if __name__ == "__main__":
