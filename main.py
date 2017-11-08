@@ -16,7 +16,7 @@ class Home(tornado.web.RequestHandler):
     def initialize(self):
         self.conn = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
         self.db = self.conn['points']
-        self.coords = self.db['coords']
+        self.coords = self.db['geosp']
 
 
 class Point(Home):
@@ -29,7 +29,6 @@ class Point(Home):
         except TypeError:
             self.write('788778')
 
-
     def post(self):
         _id = self.db.points.count() + 1
         timestamp = datetime.now()
@@ -37,20 +36,23 @@ class Point(Home):
         self.set_header("Content-Type", "application/json")
         #data = json.loads(self.get_body_arguments('x'))
 
-        point = {
+        if (-90<self.get_query_argument('x')<90) and (-180<self.get_query_argument('y')<180):
+            point = {
                 "_id": _id,
                 "point": [self.get_query_argument('x'),
                           self.get_query_argument('y')],
-                '''"x": self.get_query_argument('x'),
-                "y": self.get_query_argument('y'),'''
                 "timestamp": timestamp
-        }
-        self.db.points.insert(point)
-        location = "/point/" + str(_id)
-        self.set_header('Content-Type', 'application/json')
-        self.set_header('Location', location)
-        self.set_status(201)
-        self.write(dumps(point))
+
+                }
+            self.db.points.insert(point)
+            location = "/point/" + str(_id)
+            self.set_header('Content-Type', 'application/json')
+            self.set_header('Location', location)
+            self.set_status(201)
+            self.write(dumps(point))
+        else:
+            self.set_status(201)
+            self.write("coordinates must be in range x = [-90, 90], y = [-180, 180]")
 
     def put(self, pid):
         _id = int(pid)
@@ -100,9 +102,6 @@ class FindKnn(Home):
         points = str(list(self.db.points.find({"point": {"$near": [x, y],
                                                          "$maxDistance": r}})))
         self.write(dumps(points))
-
-        
-    
 
 
 class Distance(Home):
