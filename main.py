@@ -21,18 +21,12 @@ class Home(tornado.web.RequestHandler):
 class Initial(Home):
 
     def get(self):
-        self.write('Hello ')
-        self.write('possible urls:')
-        self.write('/point/[id] (post)')
-        self.write('/point/[id] (get)')
-        self.write('/points/')
-        self.write('/dist/[id1][id2]')
-        self.write('/find/[id][r]')
-
+        self.render("samples.html")
 
 class Point(Home):
 
-    def get(self, pid):
+    def get(self):
+        pid = self.get_query_argument('id')
         try:
             point = self.db.points.find_one({"_id": int(pid)})
             self.set_header('Content-Type', 'application/json')
@@ -47,7 +41,7 @@ class Point(Home):
         self.set_header("Content-Type", "application/json")
         #data = json.loads(self.get_body_arguments('x'))
 
-        if (-90<self.get_query_argument('x')<90) and (-180<self.get_query_argument('y')<180):
+        if (-90<int(self.get_query_argument('x'))<90) and (-180<int(self.get_query_argument('y'))<180):
             point = {
                 "_id": _id,
                 "point": [self.get_query_argument('x'),
