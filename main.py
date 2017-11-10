@@ -18,6 +18,17 @@ class Home(tornado.web.RequestHandler):
         self.db = self.conn['points']
         self.coords = self.db['geosp']
 
+class Initial(Home):
+
+    def get(self):
+        self.write('Hello ')
+        self.write('possible urls:')
+        self.write('/point/[id] (post)')
+        self.write('/point/[id] (get)')
+        self.write('/points/')
+        self.write('/dist/[id1][id2]')
+        self.write('/find/[id][r]')
+
 
 class Point(Home):
 
@@ -124,7 +135,7 @@ class Distance(Home):
 
 
 application = tornado.web.Application([
-    (r"/", Home),
+    (r"/", Initial),
     (r"/point/([0-9]+)", Point),
     (r"/point/", Point),
     (r"/points/", Points),
