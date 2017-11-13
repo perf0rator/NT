@@ -36,7 +36,7 @@ class Point(Home):
 
     def post(self):
         _id = self.db.points.count() + 1
-        timestamp = datetime.now()
+        timestamp = str(datetime.now())
 
         self.set_header("Content-Type", "application/json")
         #data = json.loads(self.get_body_arguments('x'))
@@ -59,27 +59,32 @@ class Point(Home):
             self.set_status(201)
             self.write("coordinates must be in range x = [-90, 90], y = [-180, 180]")
 
-    def put(self, pid):
-        _id = int(pid)
-        timestamp = datetime.now()
-        point = {
-                "point": [self.get_query_argument('x'),
-                          self.get_query_argument('y')],
+    def put(self):
+        pid = self.get_query_argument('id')
+        timestamp = str(datetime.now())
+        x = self.get_query_argument('x')
+        y = self.get_query_argument('y')
+        if x and y:
+            point = {
+                "point": [x, y],
                 "timestamp": timestamp
-        }
-        self.db.points.update({"_id": _id}, {"$set": point})
-        self.set_header('Content-Type', 'application/json')
-        self.write(dumps(point))
+            }
+            self.db.points.update({"_id": int(pid)}, {"$set": point})
+            self.set_header('Content-Type', 'application/json')
+            self.write(dumps(point))
+        else:
+            self.write('Missing argument x or y')
 
-    def delete(self, pid):
-        _id = int(pid)
+
+    def delete(self):
+        pid = self.get_query_argument('id')
         point = {
                 "_id": None,
                 "point": [None,
                           None],
                 "timestamp": None,
         }
-        self.db.points.update({"_id": _id}, {"$set": point})
+        self.db.points.update({"_id": pid}, {"$set": point})
         self.set_header('Content-Type', 'application/json')
         self.write(dumps(point))
 
