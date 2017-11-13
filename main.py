@@ -3,7 +3,7 @@ import tornado.web
 from datetime import datetime
 from bson.json_util import dumps
 from math import sqrt
-import json
+from bson.son import SON
 
 import pymongo
 
@@ -115,11 +115,10 @@ class Points(Home):
 class FindKnn(Home):
     
     def get(self):
-        x = self.get_query_argument('x')
-        y = self.get_query_argument('y')
-        r = self.get_query_argument('r')
-        points = str(list(self.db.points.find({"point": {"$near": [x, y],
-                                                         "$maxDistance": r}})))
+        x = int(self.get_query_argument('x'))
+        y = int(self.get_query_argument('y'))
+        r = int(self.get_query_argument('r'))
+        points = str(list(self.db.points.find({"point": SON([("$near", [x, y]), ("$maxDistance", r)])})))
         self.write(dumps(points))
 
 
