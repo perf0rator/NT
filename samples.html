@@ -1,14 +1,12 @@
 <HTML>
 
-<HEAD>
+<head>
 
-<TITLE>NT</TITLE>
+<title>NT</title>
 
-</HEAD>
+</head>
 
-<BODY BGCOLOR="FFFFFF">
-
-<HR>
+<body BGCOLOR="FFFFFF">
 
 <H3>Samples:</H3>
 
@@ -32,19 +30,19 @@
   <button type="submit" name="id" value="1" class="btn-link">Get point with id=1</button>
 </form>
 
-<form action="http://127.0.0.1:7777/point/?id=1&id=2" method="get">
-  <button type="submit" class="btn-link">Distance betwin point1 and point2</button>
+<form action="http://127.0.0.1:7777/dist/" method="get">
+  <button type="submit" class="btn-link">
+  <input type="hidden" name="point1" value="1" /> 
+  <input type="hidden" name="point2" value="2" /> Distance betwin point1 and point2 </button>
 </form>
 
-<form action="http://127.0.0.1:7777/point/?id=1&r=2" method="get">
-  <button type="submit" class="btn-link">Find neighbours of poin1 in R=2</button>
+<form action="http://127.0.0.1:7777/find/" method="get">
+  <button type="submit"  class="btn-link"> 
+  <input type="hidden" name="x" value="1" /> 
+  <input type="hidden" name="y" value="1" />
+  <input type="hidden" name="r" value="2" /> Find neighbours of point=[1,1] in R=2</button>
 </form>
 
-
-<BR> <B><I></I></B>
-
-<HR>
-
-</BODY>
+</body>
 
 </HTML> 
