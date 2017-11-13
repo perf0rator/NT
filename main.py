@@ -153,9 +153,6 @@ class KDtree_search(Home):
         nn = points.closest_point((x, y))
         self.write(dumps(nn))
 
-
-
-
 application = tornado.web.Application([
     (r"/", Initial),
     (r"/point/([0-9]+)", Point),
