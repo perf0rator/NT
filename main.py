@@ -1,9 +1,12 @@
+#!/usr/bin/env python
+
 import tornado.ioloop
 import tornado.web
 from datetime import datetime
 from bson.json_util import dumps
 from math import sqrt
 from bson.son import SON
+from KDtree import KDTree
 
 import pymongo
 
@@ -140,6 +143,18 @@ class Distance(Home):
         self.write('distance: ')
         self.write(dumps(dist))
 
+class KDtree_search(Home):
+
+    def get(self):
+        x = int(self.get_query_argument('x'))
+        y = int(self.get_query_argument('y'))
+
+        points = KDTree([self.db.points.find({}, {"point": 1})])
+        nn = points.closest_point((x, y))
+        self.write(dumps(nn))
+
+
+
 
 application = tornado.web.Application([
     (r"/", Initial),
@@ -147,7 +162,8 @@ application = tornado.web.Application([
     (r"/point/", Point),
     (r"/points/", Points),
     (r"/dist/", Distance),
-    (r"/find/", FindKnn)
+    (r"/find/", FindKnn),
+    (r"/nn/", KDtree_search)
     ], debug=True)
 
 if __name__ == "__main__":
