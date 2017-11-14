@@ -148,10 +148,16 @@ class KDtree_search(Home):
     def get(self):
         x = int(self.get_query_argument('x'))
         y = int(self.get_query_argument('y'))
+        points = []
+        data = self.db.points.find({}, {"point": 1})
+        for point in data:
+            points.append(point["point"])
 
-        points = KDTree([self.db.points.find({}, {"point": 1})])
-        nn = points.closest_point((x, y))
-        self.write(dumps(nn))
+        tree = KDTree(points)
+        nn = tree.closest_point((x, y))
+        neighbours = self.db.points.find_one({"point": nn})
+
+        self.write(dumps(neighbours))
 
 application = tornado.web.Application([
     (r"/", Initial),
