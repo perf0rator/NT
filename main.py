@@ -21,29 +21,27 @@ class Home(tornado.web.RequestHandler):
         self.db = self.conn['points']
         self.coords = self.db['geosp']
 
+
 class Initial(Home):
 
     def get(self):
         self.render("samples.html")
 
+
 class Point(Home):
 
-    def get(self):
-        pid = self.get_query_argument('id')
-        try:
-            point = self.db.points.find_one({"_id": int(pid)})
-            self.set_header('Content-Type', 'application/json')
+    def get(self, pid):
+        point = self.db.points.find_one({"_id": int(pid)})
+        self.set_header('Content-Type', 'application/json')
+
+        if point is None:
+            self.write("point with id = {} does not exist".format(pid))
+        else:
             self.write(dumps(point))
-        except TypeError:
-            self.write('788778')
 
     def post(self):
         _id = self.db.points.count() + 1
         timestamp = str(datetime.now())
-
-        self.set_header("Content-Type", "application/json")
-        #data = json.loads(self.get_body_arguments('x'))
-
         x = int(self.get_query_argument('x'))
         y = int(self.get_query_argument('y'))
 
@@ -55,9 +53,6 @@ class Point(Home):
                     "timestamp": timestamp
                     }
                 self.db.points.insert(point)
-                location = "/point/" + str(_id)
-                self.set_header('Content-Type', 'application/json')
-                self.set_header('Location', location)
                 self.set_status(201)
                 self.write(dumps(point))
             else:
@@ -86,32 +81,21 @@ class Point(Home):
         else:
             self.write('Missing argument x or y')
 
-
-
-    def delete(self):
-        pid = self.get_query_argument('id')
-        point = {
-                "_id": None,
-                "point": [None,
-                          None],
-                "timestamp": None,
-        }
-        self.db.points.update({"_id": pid}, {"$set": point})
-        self.set_header('Content-Type', 'application/json')
-        self.write(dumps(point))
+    def delete(self, pid):
+        self.db.points.remove({"_id": int(pid)})
 
 
 class Points(Home):
 
     def get(self):
-        points = str(list(self.db.points.find()))
+        points = list(self.db.points.find())
         self.set_header('Content-Type', 'application/json')
         self.write(dumps(points))
 
     def delete(self):
-        points = str(list(self.db.points.find()))
+        points = list(self.db.points.find())
         self.set_header('Content-Type', 'application/json')
-        self.db.points.drop()
+        self.db.points.remove({})
         self.write(dumps(points))
       
         
@@ -121,7 +105,8 @@ class FindKnn(Home):
         x = int(self.get_query_argument('x'))
         y = int(self.get_query_argument('y'))
         r = int(self.get_query_argument('r'))
-        points = str(list(self.db.points.find({"point": SON([("$near", [x, y]), ("$maxDistance", r)])})))
+        self.db.points.createIndex({"point": "2d"})
+        points = list(self.db.points.find({"point": SON([("$near", [x, y]), ("$maxDistance", r)])}))
         self.write(dumps(points))
 
 
@@ -142,6 +127,7 @@ class Distance(Home):
         print(dist)
         self.write('distance: ')
         self.write(dumps(dist))
+
 
 class KDtree_search(Home):
 
