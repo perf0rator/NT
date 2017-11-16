@@ -2,12 +2,13 @@
 
 import tornado.ioloop
 import tornado.web
+from tornado import gen
 from datetime import datetime
 from bson.json_util import dumps
 from math import sqrt
 from bson.son import SON
 from KDtree import KDTree
-
+import motor.motor_tornado
 import pymongo
 
 MONGODB_HOST = "127.0.0.1"
@@ -17,9 +18,9 @@ MONGODB_PORT = 27017
 class Home(tornado.web.RequestHandler):
 
     def initialize(self):
-        self.conn = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+        self.conn = motor.motor_tornado.MotorClient(MONGODB_HOST, MONGODB_PORT)#pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
         self.db = self.conn['points']
-        self.coords = self.db['geosp']
+        #self.coords = self.db['geosp']
 
 
 class Initial(Home):
@@ -30,17 +31,22 @@ class Initial(Home):
 
 class Point(Home):
 
+    @gen.coroutine
     def get(self, pid):
-        point = self.db.points.find_one({"_id": int(pid)})
+        point = yield self.db.points.find_one({"_id": int(pid)})
         self.set_header('Content-Type', 'application/json')
+        self.write(dumps(point))
 
-        if point is None:
-            self.write("point with id = {} does not exist".format(pid))
+        '''if point is None:
+            self.write(dumps(point))#"point with id = {} does not exist".format(pid))
         else:
-            self.write(dumps(point))
+            self.write(dumps(point))#dumps(point))'''
 
+    @gen.coroutine
     def post(self):
-        _id = self.db.points.count() + 1
+        count = yield self.db.points.count()
+        _id = count + 1
+        print(count, _id)
         timestamp = str(datetime.now())
         x = int(self.get_query_argument('x'))
         y = int(self.get_query_argument('y'))
@@ -52,7 +58,7 @@ class Point(Home):
                     "point": [x, y],
                     "timestamp": timestamp
                     }
-                self.db.points.insert(point)
+                yield self.db.points.insert(point)
                 self.set_status(201)
                 self.write(dumps(point))
             else:
@@ -61,6 +67,7 @@ class Point(Home):
         else:
             self.write('Missing argument x or y')
 
+    @gen.coroutine
     def put(self):
         pid = self.get_query_argument('id')
         timestamp = str(datetime.now())
@@ -72,7 +79,7 @@ class Point(Home):
                     "point": [x, y],
                     "timestamp": timestamp
                     }
-                self.db.points.update({"_id": int(pid)}, {"$set": point})
+                yield self.db.points.update({"_id": int(pid)}, {"$set": point})
                 self.set_header('Content-Type', 'application/json')
                 self.write(dumps(point))
             else:
@@ -81,19 +88,28 @@ class Point(Home):
         else:
             self.write('Missing argument x or y')
 
+    @gen.coroutine
     def delete(self, pid):
-        self.db.points.remove({"_id": int(pid)})
+        point = yield self.db.points.find_one({"_id": int(pid)})
+        self.set_header('Content-Type', 'application/json')
+        if point is None:
+            self.write(dumps(point))#("point with id = {} does not exist".format(pid))
+        else:
+            self.db.points.remove({"_id": int(pid)})
+            self.write(dumps("ok"))
+
 
 
 class Points(Home):
-
+    @gen.coroutine
     def get(self):
-        points = list(self.db.points.find())
+        points = yield self.db.points.find()
         self.set_header('Content-Type', 'application/json')
         self.write(dumps(points))
 
+    @gen.coroutine
     def delete(self):
-        points = list(self.db.points.find())
+        points = yield list(self.db.points.find())
         self.set_header('Content-Type', 'application/json')
         self.db.points.remove({})
         self.write(dumps(points))
