@@ -57,10 +57,11 @@ class Point(Home):
                 self.set_status(201)
                 self.write(dumps(point))
             else:
-                self.set_status(201)
-                self.write("coordinates must be in range x = [-90, 90], y = [-180, 180]")
+                self.set_status(400)
+                self.write(dumps("coordinates must be in range x = [-90, 90], y = [-180, 180]"))
         else:
-            self.write('Missing argument x or y')
+            self.set_status(400)
+            self.write(dumps('Missing argument x or y'))
         # yield gen.sleep(10)
 
     @gen.coroutine
@@ -78,10 +79,11 @@ class Point(Home):
                 self.set_header('Content-Type', 'application/json')
                 self.write(dumps(point))
             else:
-                self.set_status(201)
-                self.write("coordinates must be in range x = [-90, 90], y = [-180, 180]")
+                self.set_status(400)
+                self.write(dumps("coordinates must be in range x = [-90, 90], y = [-180, 180]"))
         else:
-            self.write('Missing argument x or y')
+            self.set_status(400)
+            self.write(dumps('Missing argument x or y'))
 
     @gen.coroutine
     def delete(self, pid):
@@ -94,6 +96,7 @@ class Point(Home):
             self.write(dumps("point with id = {} does not exist".format(pid)))
         else:
             yield self.db.points.update({"_id": int(pid)}, {"$set": point})
+            self.set_status(200)
             self.write(dumps("ok"))
 
 
@@ -111,19 +114,23 @@ class Points(Home):
     def delete(self):
         self.set_header('Content-Type', 'application/json')
         yield self.db.points.remove({})
+        self.set_status(200)
         self.write(dumps("OK"))
       
         
 class FindKnn(Home):
 
     @gen.coroutine
-    def get(self):
-        x = int(self.get_query_argument('x'))
-        y = int(self.get_query_argument('y'))
+    def get(self, pid):
         r = int(self.get_query_argument('r'))
-        yield self.db.points.createIndex({"point": "2d"})
-        points = yield list(self.db.points.find({"point": SON([("$near", [x, y]), ("$maxDistance", r)])}))
-        self.write(dumps(points))
+        point = yield self.db.points.find_one({"_id": int(pid)})
+        xy = point["point"]
+        print(xy, r)
+        self.db.points.create_index({"point": "2d"})
+        points = self.db.points.find({"point": SON([("$near", xy), ("$maxDistance", r)])})
+        while (yield points.fetch_next):
+            document = points.next_object()
+            self.write(dumps(document))
 
 
 class Distance(Home):
@@ -145,25 +152,31 @@ class Distance(Home):
 
 class KDtree_search(Home):
 
-    def get(self):
-        x = int(self.get_query_argument('x'))
-        y = int(self.get_query_argument('y'))
+    @gen.coroutine
+    def get(self, pid):
+        point = yield self.db.points.find_one({"_id": int(pid)})
+        xy = point["point"]
         points = []
-        data = yield self.db.points.find({}, {"point": 1})
-        for point in data:
+        document = []
+        data = self.db.points.find({}, {"point": 1})
+        while (yield data.fetch_next):
+            document.append(data.next_object())
+        for point in document:
             points.append(point["point"])
+        print(points,'oooooooooooooo')
         tree = KDTree(points)
-        nn = tree.closest_point((x, y))
+        nn = tree.closest_point(xy)
         neighbours = yield self.db.points.find_one({"point": nn})
         self.write(dumps(neighbours))
 
 application = tornado.web.Application([
     (r"/", Initial),
     (r"/point/([0-9]+)", Point),
+    (r"/point", Point),
     (r"/point", Points),
     (r"/dist/", Distance),
-    (r"/find/", FindKnn),
-    (r"/nn/", KDtree_search)
+    (r"/point/([0-9]+)/find/", FindKnn),
+    (r"/point/([0-9]+)/nn", KDtree_search)
     ], debug=True)
 
 if __name__ == "__main__":
