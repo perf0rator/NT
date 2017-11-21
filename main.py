@@ -125,7 +125,6 @@ class FindKnn(Home):
         r = int(self.get_query_argument('r'))
         point = yield self.db.points.find_one({"_id": int(pid)})
         xy = point["point"]
-        print(xy, r)
         yield self.db.points.create_index([("point", "2d")])
         points = self.db.points.find({"point": SON([("$near", xy), ("$maxDistance", r)])})
         while (yield points.fetch_next):
@@ -163,7 +162,6 @@ class KDtree_search(Home):
             document.append(data.next_object())
         for point in document:
             points.append(point["point"])
-        print(points,'oooooooooooooo')
         tree = KDTree(points)
         nn = tree.closest_point(xy)
         neighbours = yield self.db.points.find_one({"point": nn})
