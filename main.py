@@ -126,7 +126,7 @@ class FindKnn(Home):
         point = yield self.db.points.find_one({"_id": int(pid)})
         xy = point["point"]
         print(xy, r)
-        self.db.points.create_index({"point": "2d"})
+        yield self.db.points.create_index([("point", "2d")])
         points = self.db.points.find({"point": SON([("$near", xy), ("$maxDistance", r)])})
         while (yield points.fetch_next):
             document = points.next_object()
