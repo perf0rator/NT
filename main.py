@@ -172,7 +172,6 @@ class KDtree_search(Home):
 application = tornado.web.Application([
     (r"/", Initial),
     (r"/point/([0-9]+)", Point),
-    (r"/point", Point),
     (r"/point", Points),
     (r"/dist/", Distance),
     (r"/point/([0-9]+)/find/", FindKnn),
