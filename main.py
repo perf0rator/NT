@@ -4,12 +4,14 @@ import tornado.ioloop
 import motor.motor_tornado
 import tornado.web
 from tornado import gen
+
 from datetime import datetime
 from bson.json_util import dumps
-from math import sqrt
 from bson.son import SON
-from KDtree import KDTree
 from bson.objectid import ObjectId
+
+from math import sqrt
+from KDtree import KDTree
 import random
 
 
@@ -71,13 +73,6 @@ class Point(Home):
 
 class Points(Home):
 
-    def id_generator(self):
-        now = datetime.now()
-        time = int(datetime.timestamp(now))
-        rand = random.randint(1, 1000)
-        _id = rand * 10 ** 10 + time
-        return _id
-
     @gen.coroutine
     def get(self):
         self.set_header('Content-Type', 'application/json')
@@ -91,12 +86,12 @@ class Points(Home):
         timestamp = datetime.now()
         time = int(datetime.timestamp(timestamp))
         rand = random.randint(1, 1000)
-        _id = rand * 10 ** 10 + time
+        _id = rand * 10 ** 10 + time              # smekalochka
         x = int(self.get_query_argument('x'))
         y = int(self.get_query_argument('y'))
 
         if x and y:
-            if (-90 < x < 90) and (-180 < y < 180):
+            if -90 < x < 90 and -180 < y < 180:
                 point = {
                     "_id": _id,
                     "point": [x, y],
@@ -111,7 +106,6 @@ class Points(Home):
         else:
             self.set_status(400)
             self.write(dumps('Missing argument x or y'))
-            # yield gen.sleep(10)
 
     @gen.coroutine
     def delete(self):
@@ -175,8 +169,8 @@ application = tornado.web.Application([
     (r"/", Home),
     (r"/point/([0-9]+)", Point),
     (r"/point", Points),
-    (r"/dist/", Distance),
-    (r"/point/([0-9]+)/find/", FindKnn),
+    (r"/dist", Distance),
+    (r"/point/([0-9]+)/find", FindKnn),
     (r"/point/([0-9]+)/nn", KDtree_search)
     ], debug=True)
 
