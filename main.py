@@ -8,15 +8,12 @@ from tornado import gen
 from datetime import datetime
 from bson.json_util import dumps
 from bson.son import SON
-from bson.objectid import ObjectId
 
-from math import sqrt
 import random
 
 MONGODB_HOST = "127.0.0.1"
 MONGODB_PORT = 27017
 db = motor.MotorClient(MONGODB_HOST, MONGODB_PORT).points
-
 
 class Home(tornado.web.RequestHandler):
     def init(self):
@@ -28,8 +25,12 @@ class Point(Home):
     def get(self, pid):
         self.set_header('Content-Type', 'application/json')
         point = yield db.points.find_one({"_id": int(pid)})
-        self.write(dumps(point))
-        yield gen.sleep(1)
+        if point is None:
+            self.write(dumps("point with id = {} does not exist".format(pid)))
+            self.set_status(400)
+        else:
+            self.write(dumps(point))
+            self.set_status(200)
 
     @gen.coroutine
     def put(self, pid):
@@ -61,6 +62,7 @@ class Point(Home):
         }
         if point is None:
             self.write(dumps("point with id = {} does not exist".format(pid)))
+
         else:
             yield db.points.update({"_id": int(pid)}, {"$set": point})
             self.set_status(200)
@@ -75,13 +77,14 @@ class Points(Home):
         while (yield points.fetch_next):
             document = points.next_object()
             self.write(dumps(document))
+            self.set_status(200)
 
     @gen.coroutine
     def post(self):
         timestamp = datetime.now()
         time = int(datetime.timestamp(timestamp))
         rand = random.randint(1, 1000)
-        _id = rand * 10 ** 10 + time  # smekalochka
+        _id = time * 10 ** 4 + rand   # smekalochka
         x = int(self.get_query_argument('x'))
         y = int(self.get_query_argument('y'))
 
@@ -112,15 +115,17 @@ class Points(Home):
 
 class FindKnn(Home):
     @gen.coroutine
-    def get(self, pid):
+    def get(self, pid, n):
         r = int(self.get_query_argument('r'))
+        n = int(self.get_query_argument('n'))
         point = yield db.points.find_one({"_id": int(pid)})
         xy = point["point"]
         yield db.points.create_index([("point", "2d")])
-        points = db.points.find({"point": SON([("$near", xy), ("$maxDistance", r)])})
+        points = db.points.find({"point": SON([("$near", xy), ("$maxDistance", r)])}).limit(n)
         while (yield points.fetch_next):
             document = points.next_object()
             self.write(dumps(document))
+            self.set_status(200)
 
 
 application = tornado.web.Application([
